@@ -91,10 +91,14 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
             [InstapaperService shareWithParams:params onViewController:viewController];
             break;
         case DTServiceTypePocket:
-            [PocketService shareWithParams:params onViewController:viewController];
+            if ([[DodgeThis sharedManager] pocketAPIKey]) {
+                [PocketService shareWithParams:params onViewController:viewController];
+            }
             break;
         case DTServiceTypeReadability:
-            [ReadabilityService shareWithParams:params onViewController:viewController];
+            if ([[DodgeThis sharedManager] readabilityKey] && [[DodgeThis sharedManager] readabilitySecret]) {
+                [ReadabilityService shareWithParams:params onViewController:viewController];
+            }
             break;
         default:
             break;
@@ -208,7 +212,6 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
 - (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
     DTServiceType service = (DTServiceType) buttonIndex;
-    NSLog(@"service %i", buttonIndex);
     switch (service) {
         case DTServiceTypeFacebook:
             [FacebookService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];

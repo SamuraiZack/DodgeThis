@@ -31,10 +31,18 @@ extern NSString *const AppWillTerminateNotificationName;
 @end
 
 @interface DodgeThis : NSObject
+@property (nonatomic, strong) NSString *pocketAPIKey;
+@property (nonatomic, strong) NSString *readabilityKey;
+@property (nonatomic, strong) NSString *readabilitySecret;
+
++ (DodgeThis *)sharedManager;
 + (void)shareURL:(NSURL *)url title:(NSString *)title image:(UIImage *)image withService:(DTServiceType)service onViewController:(UIViewController *)viewController;
 + (void)showShareOptionsToShareUrl:(NSURL *)url title:(NSString *)title image:(UIImage *)image onViewController:(UIViewController *)viewController;
 + (void)showShareOptionsToShareUrl:(NSURL *)url title:(NSString *)title image:(UIImage *)image onViewController:(UIViewController *)viewController forTypeOfContent:(DTContentType)contentType;
-+ (void)startSessionWithURLSchemeSuffix:(NSString *)suffix;
++ (void)startSessionWithFacebookURLSchemeSuffix:(NSString *)suffix
+                                      pocketAPI:(NSString *)pocketAPI
+                                 readabilityKey:(NSString *)readabilityKey
+                              readabilitySecret:(NSString *)readabilitySecret;
 + (BOOL)handleFacebookOpenUrl:(NSURL *)url;
 + (BOOL)isSocialAvailable;
 @end

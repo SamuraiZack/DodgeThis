@@ -2,6 +2,7 @@
 
 #import "PocketService.h"
 #import "KeychainItemWrapper.h"
+#import "DodgeThis.h"
 
 //Success login or success posted
 const int SUCCESS = 200;
@@ -21,8 +22,8 @@ NSString *const PocketActivity =
 
 static PocketService *_manager;
 
-#define pocketApiAuthenticateUrl @"https://readitlaterlist.com/v2/auth?username=%@&password=%@&apikey=3ebZ2Tc4A7f9dLd8c3g7bsQCnud3nqf1"
-#define pocketApiPostUrl @"https://readitlaterlist.com/v2/add?username=%@&password=%@&apikey=3ebZ2Tc4A7f9dLd8c3g7bsQCnud3nqf1&url=%@&title=%@"
+#define pocketApiAuthenticateUrl @"https://readitlaterlist.com/v2/auth?username=%@&password=%@&apikey=%@"
+#define pocketApiPostUrl @"https://readitlaterlist.com/v2/add?username=%@&password=%@&apikey=%@&url=%@&title=%@"
 
 @interface PocketService()
 @property (strong, nonatomic) NSString *username;
@@ -70,7 +71,7 @@ static PocketService *_manager;
     self.username = username;
     self.password = password;
 
-    NSString *urlString = [NSString stringWithFormat:pocketApiAuthenticateUrl, self.username, self.password];;
+    NSString *urlString = [NSString stringWithFormat:pocketApiAuthenticateUrl, self.username, self.password, [[DodgeThis sharedManager] pocketAPIKey]];;
     [self performConnectionToUrl:[NSURL URLWithString:urlString]];
 }
 
@@ -93,7 +94,7 @@ static PocketService *_manager;
     
     self.username = [keychain objectForKey:(__bridge id)kSecAttrAccount];
     self.password = [keychain objectForKey:(__bridge id)kSecValueData];
-    NSString *urlString = [NSString stringWithFormat:pocketApiPostUrl, self.username, self.password, self.url, self.articleTitle];
+    NSString *urlString = [NSString stringWithFormat:pocketApiPostUrl, self.username, self.password, [[DodgeThis sharedManager] pocketAPIKey], self.url, self.articleTitle];
     
     [self performConnectionToUrl:[NSURL URLWithString:urlString]];
 }

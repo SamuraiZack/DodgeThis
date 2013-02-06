@@ -136,14 +136,20 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
     PocketActivityItem *pocketActivity = [[PocketActivityItem alloc] init];
     ReadabilityActivityItem *readabilityActivity = [[ReadabilityActivityItem alloc] init];
     
-    NSArray *applicationActivities;
-    
+//    NSArray *applicationActivities;
+    NSMutableArray *applicationActivities;
     switch (self.contentType) {
         case DTContentTypeAll:
-            applicationActivities = @[ instapaperActivity, pocketActivity, readabilityActivity ];
-            break;
         case DTContentTypeArticle:
-            applicationActivities = @[ instapaperActivity, pocketActivity, readabilityActivity ];
+            applicationActivities = [NSMutableArray arrayWithObject:instapaperActivity];
+            
+            if (self.pocketAPIKey) {
+                [applicationActivities addObject:pocketActivity];
+            }
+            
+            if (self.readabilityKey && self.readabilitySecret) {
+                [applicationActivities addObject:readabilityActivity];
+            }
             break;
         case DTContentTypeVideo:
             applicationActivities = nil;
@@ -165,14 +171,15 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
     NSMutableArray *buttonTitles = [[NSMutableArray alloc] initWithObjects:@"Facebook", @"Twitter", @"Email", @"Message", nil];
     switch (self.contentType) {
         case DTContentTypeAll:
-            [buttonTitles addObject:@"Add to Instapaper"];
-            [buttonTitles addObject:@"Add to Pocket"];
-            [buttonTitles addObject:@"Add to Readability"];
-            break;
         case DTContentTypeArticle:
             [buttonTitles addObject:@"Add to Instapaper"];
-            [buttonTitles addObject:@"Add to Pocket"];
-            [buttonTitles addObject:@"Add to Readability"];
+            if (self.pocketAPIKey) {
+                [buttonTitles addObject:@"Add to Pocket"];
+            }
+            
+            if (self.readabilityKey && self.readabilitySecret) {
+                [buttonTitles addObject:@"Add to Readability"];
+            }
             break;
         case DTContentTypeVideo:
             break;
@@ -201,6 +208,7 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
 - (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
     DTServiceType service = (DTServiceType) buttonIndex;
+    NSLog(@"service %i", buttonIndex);
     switch (service) {
         case DTServiceTypeFacebook:
             [FacebookService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
@@ -220,11 +228,12 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
             }
             break;
         case DTServiceTypePocket:
-            if (self.contentType == DTContentTypeArticle || self.contentType == DTContentTypeAll) {
+            if ((self.contentType == DTContentTypeArticle || self.contentType == DTContentTypeAll) && self.pocketAPIKey) {
                 [PocketService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
             }
+            break;
         case DTServiceTypeReadability:
-            if (self.contentType == DTContentTypeArticle || self.contentType == DTContentTypeAll) {
+            if ((self.contentType == DTContentTypeArticle || self.contentType == DTContentTypeAll) && self.readabilityKey && self.readabilitySecret) {
                 [ReadabilityService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
             }
             break;
@@ -238,9 +247,15 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
     self.actionSheet = nil;
 }
 
-+ (void)startSessionWithURLSchemeSuffix:(NSString *)suffix
++ (void)startSessionWithFacebookURLSchemeSuffix:(NSString *)suffix
+                                      pocketAPI:(NSString *)pocketAPI
+                                 readabilityKey:(NSString *)readabilityKey
+                              readabilitySecret:(NSString *)readabilitySecret
 {
     [FacebookService startSessionWithURLSchemeSuffix:suffix];
+    [DodgeThis sharedManager].pocketAPIKey = pocketAPI;
+    [DodgeThis sharedManager].readabilityKey = readabilityKey;
+    [DodgeThis sharedManager].readabilitySecret = readabilitySecret;
 }
 
 // Called from AppDelegate's application open url method

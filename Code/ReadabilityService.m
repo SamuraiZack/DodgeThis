@@ -2,7 +2,7 @@
 
 #import "ReadabilityService.h"
 #import "GCOAuth.h"
-#import "DodgeThis.h"
+#import "ShareThis.h"
 
 const int LOGIN_SUCCESS = 200;
 const int BOOKMARK_SUCCESS = 202;
@@ -72,8 +72,8 @@ static ReadabilityService *_manager;
                                                       password, @"x_auth_password",
                                                       @"client_auth", @"x_auth_mode", nil]
                                                 host:@"www.readability.com"
-                                         consumerKey:[[DodgeThis sharedManager] readabilityKey]
-                                      consumerSecret:[[DodgeThis sharedManager] readabilitySecret]
+                                         consumerKey:[[ShareThis sharedManager] readabilityKey]
+                                      consumerSecret:[[ShareThis sharedManager] readabilitySecret]
                                          accessToken:nil
                                          tokenSecret:nil];
     

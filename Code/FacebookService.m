@@ -22,10 +22,19 @@ static FacebookService *_manager;
     return _manager;
 }
 
++ (BOOL)facebookAvailable
+{
+    if ([ShareThis isSocialAvailable]) {
+        return YES;
+    } else {
+        return [FBSession defaultAppID] ? YES : NO;
+    }
+}
+
 + (void)shareWithParams:(NSDictionary *)params onViewController:(UIViewController *)viewController
 {
     // IOS 6+ services
-    if ([DodgeThis isSocialAvailable]) {
+    if ([ShareThis isSocialAvailable]) {
         __block __weak SLComposeViewController *slComposeSheet = [SLComposeViewController composeViewControllerForServiceType:SLServiceTypeFacebook];
         [slComposeSheet setInitialText:[params objectForKey:@"title"]];
         [slComposeSheet addURL:[params objectForKey:@"url"]];
@@ -119,7 +128,7 @@ static FacebookService *_manager;
         case FBSessionStateOpen:
             if (!error) {
                 // We have a valid session
-                NSLog(@"User session found");
+                NSLog(@"Facebook user session found");
             }
             break;
         case FBSessionStateClosed:
@@ -156,6 +165,7 @@ static FacebookService *_manager;
     NSArray *permissions = [[NSArray alloc] initWithObjects:
                             @"publish_stream",
                             nil];
+
     FBSession *session =
     [[FBSession alloc] initWithAppID:nil
                          permissions:permissions

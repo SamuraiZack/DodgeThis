@@ -1,6 +1,6 @@
 /* Copyright 2012 IGN Entertainment, Inc. */
 
-#import "DodgeThis.h"
+#import "ShareThis.h"
 #import "InstapaperActivityItem.h"
 #import "PocketActivityItem.h"
 #import "TwitterService.h"
@@ -12,23 +12,24 @@
 #import "ReadabilityService.h"
 #import "ReadabilityActivityItem.h"
 
-static DodgeThis *_manager;
+static ShareThis *_manager;
 NSString *const AppDidBecomeActiveNotificationName = @"appDidBecomeActive";
 NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
 
-@interface DodgeThis () <UIActionSheetDelegate>
+@interface ShareThis () <UIActionSheetDelegate>
 @property (nonatomic, strong) UIActionSheet *actionSheet;
 @property (nonatomic, strong) NSDictionary *params;
 @property (nonatomic, strong) UIViewController *viewControllerToShowServiceOn;
-@property (nonatomic) DTContentType contentType;
+@property (nonatomic) STContentType contentType;
+@property (nonatomic, strong) NSMutableArray *actionSheetServiceButtonList;
 @end
 
-@implementation DodgeThis
+@implementation ShareThis
 
-+ (DodgeThis *)sharedManager
++ (ShareThis *)sharedManager
 {
     if (!_manager) {
-        _manager = [[DodgeThis alloc] init];
+        _manager = [[ShareThis alloc] init];
     }
     return _manager;
 }
@@ -68,38 +69,39 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
 
 #pragma mark Sharing
 // Perform the type of sharing service with passed in parameters
-+ (void)shareURL:(NSURL *) url title:(NSString *)title image:(UIImage *)image withService:(DTServiceType)service  onViewController:(UIViewController *)viewController
++ (void)shareURL:(NSURL *) url title:(NSString *)title image:(UIImage *)image withService:(STServiceType)service  onViewController:(UIViewController *)viewController
 {
     // Save the view to later use it to show/dismiss services
-    [[DodgeThis sharedManager] saveViewController:viewController];
+    [[ShareThis sharedManager] saveViewController:viewController];
     // Save the params to share
-    NSDictionary *params = [[DodgeThis sharedManager] saveDictionaryWithUrl:url title:title image:image];
+    NSDictionary *params = [[ShareThis sharedManager] saveDictionaryWithUrl:url title:title image:image];
     switch (service) {
-        case DTServiceTypeFacebook:
+        case STServiceTypeFacebook:
             [FacebookService shareWithParams:params onViewController:viewController];
             break;
-        case DTServiceTypeTwitter:
+        case STServiceTypeTwitter:
             [TwitterService shareWithParams:params onViewController:viewController];
             break;
-        case DTServiceTypeMail:
+        case STServiceTypeMail:
             [EmailService shareWithParams:params onViewController:viewController];
             break;
-        case DTServiceTypeMessage:
+        case STServiceTypeMessage:
             [MessageService shareWithParams:params onViewController:viewController];
             break;
-        case DTServiceTypeInstapaper:
+        case STServiceTypeInstapaper:
             [InstapaperService shareWithParams:params onViewController:viewController];
             break;
-        case DTServiceTypePocket:
-            if ([[DodgeThis sharedManager] pocketAPIKey]) {
+        case STServiceTypePocket:
+            if ([[ShareThis sharedManager] pocketAPIKey]) {
                 [PocketService shareWithParams:params onViewController:viewController];
             }
             break;
-        case DTServiceTypeReadability:
-            if ([[DodgeThis sharedManager] readabilityKey] && [[DodgeThis sharedManager] readabilitySecret]) {
+        case STServiceTypeReadability:
+            if ([[ShareThis sharedManager] readabilityKey] && [[ShareThis sharedManager] readabilitySecret]) {
                 [ReadabilityService shareWithParams:params onViewController:viewController];
             }
             break;
+        case STServiceTypeServiceCount:
         default:
             break;
     }
@@ -108,14 +110,14 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
 #pragma mark ActionSheet / ActivityView
 + (void)showShareOptionsToShareUrl:(NSURL *)url title:(NSString *)title image:(UIImage *)image onViewController:(UIViewController *)viewController
 {
-    [[DodgeThis sharedManager] setContentType:DTContentTypeAll];
-    [[DodgeThis sharedManager] showShareOptionsToShareUrl:url title:title image:image onViewController:viewController];
+    [[ShareThis sharedManager] setContentType:STContentTypeAll];
+    [[ShareThis sharedManager] showShareOptionsToShareUrl:url title:title image:image onViewController:viewController];
 }
 
-+ (void)showShareOptionsToShareUrl:(NSURL *)url title:(NSString *)title image:(UIImage *)image onViewController:(UIViewController *)viewController forTypeOfContent:(DTContentType)contentType
++ (void)showShareOptionsToShareUrl:(NSURL *)url title:(NSString *)title image:(UIImage *)image onViewController:(UIViewController *)viewController forTypeOfContent:(STContentType)contentType
 {
-    [[DodgeThis sharedManager] setContentType:contentType];
-    [[DodgeThis sharedManager] showShareOptionsToShareUrl:url title:title image:image onViewController:viewController];
+    [[ShareThis sharedManager] setContentType:contentType];
+    [[ShareThis sharedManager] showShareOptionsToShareUrl:url title:title image:image onViewController:viewController];
 }
 
 - (void)showShareOptionsToShareUrl:(NSURL *)url title:(NSString *)title image:(UIImage *)image onViewController:(UIViewController *)viewController
@@ -125,7 +127,7 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
     // Save the params to share
     [self saveDictionaryWithUrl:url title:title image:image];
     // Show ios6+ activity view if available, if not then use action sheet
-    if ([DodgeThis isSocialAvailable]) {
+    if ([ShareThis isSocialAvailable]) {
         [self showActivityView];
     } else {
         [self showActionSheet];
@@ -143,8 +145,8 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
 //    NSArray *applicationActivities;
     NSMutableArray *applicationActivities;
     switch (self.contentType) {
-        case DTContentTypeAll:
-        case DTContentTypeArticle:
+        case STContentTypeAll:
+        case STContentTypeArticle:
             applicationActivities = [NSMutableArray arrayWithObject:instapaperActivity];
             
             if (self.pocketAPIKey) {
@@ -155,7 +157,7 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
                 [applicationActivities addObject:readabilityActivity];
             }
             break;
-        case DTContentTypeVideo:
+        case STContentTypeVideo:
             applicationActivities = nil;
             break;
         default:
@@ -172,38 +174,59 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
 // Show action sheet
 - (void)showActionSheet
 {
-    NSMutableArray *buttonTitles = [[NSMutableArray alloc] initWithObjects:@"Facebook", @"Twitter", @"Email", @"Message", nil];
-    switch (self.contentType) {
-        case DTContentTypeAll:
-        case DTContentTypeArticle:
-            [buttonTitles addObject:@"Add to Instapaper"];
-            if (self.pocketAPIKey) {
-                [buttonTitles addObject:@"Add to Pocket"];
+    if (!self.actionSheet) {
+        NSMutableArray *buttonTitles;
+        
+        if ([FacebookService facebookAvailable]) {
+            buttonTitles = [[NSMutableArray alloc] initWithObjects:@"Facebook", @"Twitter", @"Email", @"Message", nil];
+            if (!self.actionSheetServiceButtonList) {
+                self.actionSheetServiceButtonList = [[NSMutableArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:STServiceTypeFacebook],
+                                                     [[NSNumber alloc] initWithInt:STServiceTypeTwitter],
+                                                     [[NSNumber alloc] initWithInt:STServiceTypeMail],
+                                                     [[NSNumber alloc] initWithInt:STServiceTypeMessage], nil];
             }
-            
-            if (self.readabilityKey && self.readabilitySecret) {
-                [buttonTitles addObject:@"Add to Readability"];
-            }
-            break;
-        case DTContentTypeVideo:
-            break;
-        default:
-            break;
+        } else {
+            buttonTitles = [[NSMutableArray alloc] initWithObjects:@"Twitter", @"Email", @"Message", nil];
+            self.actionSheetServiceButtonList = [[NSMutableArray alloc] initWithObjects:[[NSNumber alloc] initWithInt:STServiceTypeTwitter],
+                                                 [[NSNumber alloc] initWithInt:STServiceTypeMail],
+                                                 [[NSNumber alloc] initWithInt:STServiceTypeMessage], nil];
+        }
+        
+        switch (self.contentType) {
+            case STContentTypeAll:
+            case STContentTypeArticle:
+                [buttonTitles addObject:@"Add to Instapaper"];
+                if (self.pocketAPIKey) {
+                    [buttonTitles addObject:@"Add to Pocket"];
+                    [self.actionSheetServiceButtonList addObject:[[NSNumber alloc] initWithInt:STServiceTypePocket]];
+                }
+                
+                if (self.readabilityKey && self.readabilitySecret) {
+                    [buttonTitles addObject:@"Add to Readability"];
+                    [self.actionSheetServiceButtonList addObject:[[NSNumber alloc] initWithInt:STServiceTypeInstapaper]];
+                }
+                break;
+            case STContentTypeVideo:
+                break;
+            default:
+                break;
+        }
+        
+        self.actionSheet = [[UIActionSheet alloc] initWithTitle:@"Sharing Options"
+                                                       delegate:self
+                                              cancelButtonTitle:nil
+                                         destructiveButtonTitle:nil
+                                              otherButtonTitles:nil,
+                                                                nil];
+        
+        for (int i = 0; i < [buttonTitles count]; i++) {
+            [self.actionSheet addButtonWithTitle:[buttonTitles objectAtIndex:i]];
+        }
+        
+        [self.actionSheet addButtonWithTitle:@"Close"];
+        self.actionSheet.cancelButtonIndex = buttonTitles.count;
+        [self.actionSheetServiceButtonList addObject:[[NSNumber alloc] initWithInt:STServiceTypeServiceCount]];
     }
-    
-    self.actionSheet = [[UIActionSheet alloc] initWithTitle:@"Sharing Options"
-                                                   delegate:self
-                                          cancelButtonTitle:nil
-                                     destructiveButtonTitle:nil
-                                          otherButtonTitles:nil,
-                                                            nil];
-    
-    for (int i = 0; i < [buttonTitles count]; i++) {
-        [self.actionSheet addButtonWithTitle:[buttonTitles objectAtIndex:i]];
-    }
-    
-    [self.actionSheet addButtonWithTitle:@"Close"];
-    self.actionSheet.cancelButtonIndex = buttonTitles.count;
     
     [self.actionSheet showInView:self.viewControllerToShowServiceOn.view];
 }
@@ -211,35 +234,37 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
 // Call one of the services
 - (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
-    DTServiceType service = (DTServiceType) buttonIndex;
+    STServiceType service = (STServiceType) [[self.actionSheetServiceButtonList objectAtIndex:buttonIndex] intValue];
+
     switch (service) {
-        case DTServiceTypeFacebook:
+        case STServiceTypeFacebook:
             [FacebookService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
             break;
-        case DTServiceTypeTwitter:
+        case STServiceTypeTwitter:
             [TwitterService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
             break;
-        case DTServiceTypeMail:
+        case STServiceTypeMail:
             [EmailService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
             break;
-        case DTServiceTypeMessage:
+        case STServiceTypeMessage:
             [MessageService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
             break;
-        case DTServiceTypeInstapaper:
-            if (self.contentType == DTContentTypeArticle || self.contentType == DTContentTypeAll) {
+        case STServiceTypeInstapaper:
+            if (self.contentType == STContentTypeArticle || self.contentType == STContentTypeAll) {
                 [InstapaperService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
             }
             break;
-        case DTServiceTypePocket:
-            if ((self.contentType == DTContentTypeArticle || self.contentType == DTContentTypeAll) && self.pocketAPIKey) {
+        case STServiceTypePocket:
+            if ((self.contentType == STContentTypeArticle || self.contentType == STContentTypeAll) && self.pocketAPIKey) {
                 [PocketService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
             }
             break;
-        case DTServiceTypeReadability:
-            if ((self.contentType == DTContentTypeArticle || self.contentType == DTContentTypeAll) && self.readabilityKey && self.readabilitySecret) {
+        case STServiceTypeReadability:
+            if ((self.contentType == STContentTypeArticle || self.contentType == STContentTypeAll) && self.readabilityKey && self.readabilitySecret) {
                 [ReadabilityService shareWithParams:self.params onViewController:self.viewControllerToShowServiceOn];
             }
             break;
+        case STServiceTypeServiceCount:
         default:
             break;
     }
@@ -256,9 +281,9 @@ NSString *const AppWillTerminateNotificationName = @"appWillTerminate";
                               readabilitySecret:(NSString *)readabilitySecret
 {
     [FacebookService startSessionWithURLSchemeSuffix:suffix];
-    [DodgeThis sharedManager].pocketAPIKey = pocketAPI;
-    [DodgeThis sharedManager].readabilityKey = readabilityKey;
-    [DodgeThis sharedManager].readabilitySecret = readabilitySecret;
+    [ShareThis sharedManager].pocketAPIKey = pocketAPI;
+    [ShareThis sharedManager].readabilityKey = readabilityKey;
+    [ShareThis sharedManager].readabilitySecret = readabilitySecret;
 }
 
 // Called from AppDelegate's application open url method

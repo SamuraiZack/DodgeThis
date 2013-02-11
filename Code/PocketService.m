@@ -2,7 +2,7 @@
 
 #import "PocketService.h"
 #import "KeychainItemWrapper.h"
-#import "DodgeThis.h"
+#import "ShareThis.h"
 
 //Success login or success posted
 const int SUCCESS = 200;
@@ -71,7 +71,7 @@ static PocketService *_manager;
     self.username = username;
     self.password = password;
 
-    NSString *urlString = [NSString stringWithFormat:pocketApiAuthenticateUrl, self.username, self.password, [[DodgeThis sharedManager] pocketAPIKey]];;
+    NSString *urlString = [NSString stringWithFormat:pocketApiAuthenticateUrl, self.username, self.password, [[ShareThis sharedManager] pocketAPIKey]];;
     [self performConnectionToUrl:[NSURL URLWithString:urlString]];
 }
 
@@ -94,7 +94,7 @@ static PocketService *_manager;
     
     self.username = [keychain objectForKey:(__bridge id)kSecAttrAccount];
     self.password = [keychain objectForKey:(__bridge id)kSecValueData];
-    NSString *urlString = [NSString stringWithFormat:pocketApiPostUrl, self.username, self.password, [[DodgeThis sharedManager] pocketAPIKey], self.url, self.articleTitle];
+    NSString *urlString = [NSString stringWithFormat:pocketApiPostUrl, self.username, self.password, [[ShareThis sharedManager] pocketAPIKey], self.url, self.articleTitle];
     
     [self performConnectionToUrl:[NSURL URLWithString:urlString]];
 }

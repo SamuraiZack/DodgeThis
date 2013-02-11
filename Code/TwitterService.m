@@ -9,7 +9,7 @@
 + (void)shareWithParams:(NSDictionary *)params onViewController:(UIViewController *)viewController
 {
     // IOS 6+ services
-    if ([DodgeThis isSocialAvailable]) {
+    if ([ShareThis isSocialAvailable]) {
         __block __weak SLComposeViewController *slComposeSheet = [SLComposeViewController composeViewControllerForServiceType:SLServiceTypeTwitter];
         [slComposeSheet setInitialText:[params objectForKey:@"title"]];
         [slComposeSheet addURL:[params objectForKey:@"url"]];

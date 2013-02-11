@@ -1,9 +1,9 @@
 /* Copyright 2012 IGN Entertainment, Inc. */
 
 #import <Foundation/Foundation.h>
-#import "DodgeThis.h"
+#import "ShareThis.h"
 #import "MessageUI/MessageUI.h"
 
-@interface MessageService : NSObject <DTService, MFMessageComposeViewControllerDelegate>
+@interface MessageService : NSObject <STService, MFMessageComposeViewControllerDelegate>
 
 @end
